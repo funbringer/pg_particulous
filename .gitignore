@@ -1,0 +1,12 @@
+.deps
+results/*
+regression.diffs
+regression.out
+*.o
+*.so
+*.pyc
+*.gcda
+*.gcno
+*.gcov
+tags
+cscope*
