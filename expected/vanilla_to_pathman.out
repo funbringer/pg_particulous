@@ -81,7 +81,7 @@ insert into parts.pt values (0), (10), (100) returning *, tableoid::regclass;
  100 | parts.pt_4
 (3 rows)
 
-/* test UPDATE */
+/* test DELETE */
 begin;
 explain (costs off) delete from parts.pt where val = 0;
         QUERY PLAN         
@@ -98,7 +98,7 @@ delete from parts.pt where val = 0 returning *, tableoid::regclass;
 (1 row)
 
 rollback;
-/* test DELETE */
+/* test UPDATE */
 begin;
 explain (costs off) update parts.pt set val = 9 where val = 10;
          QUERY PLAN         

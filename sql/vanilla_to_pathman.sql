@@ -34,14 +34,14 @@ explain (costs off) insert into parts.pt values (1);
 insert into parts.pt values (0), (10), (100) returning *, tableoid::regclass;
 
 
-/* test UPDATE */
+/* test DELETE */
 begin;
 explain (costs off) delete from parts.pt where val = 0;
 delete from parts.pt where val = 0 returning *, tableoid::regclass;
 rollback;
 
 
-/* test DELETE */
+/* test UPDATE */
 begin;
 explain (costs off) update parts.pt set val = 9 where val = 10;
 update parts.pt set val = 9 where val = 10 returning *, tableoid::regclass;

@@ -10,7 +10,7 @@ PGFILEDESC = "pg_particulous - instant migration from pg_pathman to vanilla Post
 
 DATA = pg_particulous--1.0.sql
 
-REGRESS = particulous_main
+REGRESS = vanilla_to_pathman
 
 ifdef USE_PGXS
 PG_CONFIG = pg_config
