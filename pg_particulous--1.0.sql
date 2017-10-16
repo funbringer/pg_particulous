@@ -105,14 +105,18 @@ BEGIN
 
 	/* Use storage of temp table for parent */
 	UPDATE pg_catalog.pg_class SET
-		relkind		= temp_rel.relkind,
-		relfilenode	= temp_rel.relfilenode
+		relkind			= temp_rel.relkind,
+		relfilenode		= temp_rel.relfilenode,
+		relfrozenxid	= temp_rel.relfrozenxid,
+		relminmxid		= temp_rel.relminmxid
 	WHERE oid = part_relid;
 
 	/* Use storate of parent table for temp */
 	UPDATE pg_catalog.pg_class SET
-		relkind		= part_rel.relkind,
-		relfilenode	= part_rel.relfilenode
+		relkind			= part_rel.relkind,
+		relfilenode		= part_rel.relfilenode,
+		relfrozenxid	= part_rel.relfrozenxid,
+		relminmxid		= part_rel.relminmxid
 	WHERE oid = temp_relid;
 
 	/* Make temporary table kind of 'partitioned' */

@@ -125,6 +125,10 @@ select count(*) from parts.pt;
 (1 row)
 
 rollback;
+/* test VACUUM */
+vacuum analyze;
+vacuum freeze;
+vacuum full;
 drop schema parts cascade;
 NOTICE:  drop cascades to table parts.pt
 drop extension pg_particulous;

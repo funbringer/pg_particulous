@@ -55,6 +55,12 @@ select count(*) from parts.pt;
 rollback;
 
 
+/* test VACUUM */
+vacuum analyze;
+vacuum freeze;
+vacuum full;
+
+
 
 drop schema parts cascade;
 drop extension pg_particulous;
