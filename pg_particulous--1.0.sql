@@ -5,12 +5,33 @@ AS 'MODULE_PATHNAME', 'build_vanilla_part_condition'
 LANGUAGE C STRICT;
 
 
+CREATE FUNCTION build_vanilla_part_key(
+	relation	REGCLASS)
+RETURNS TEXT AS
+$$
+DECLARE
+	raw_key		text;
+
+BEGIN
+	raw_key = pg_get_partkeydef(relation);
+
+	/* Replace some keywords */
+	raw_key = replace(raw_key, 'PARTITION BY', '');
+	raw_key = replace(raw_key, 'RANGE', '');
+	raw_key = replace(raw_key, 'LIST', '');
+
+	RETURN raw_key;
+END
+$$
+LANGUAGE plpgsql STRICT;
+
+
 CREATE FUNCTION is_partitioned_by_pg10(
 	relation	REGCLASS)
 RETURNS BOOL AS
 $$
 DECLARE
-	rows_count	INT8;
+	rows_count	int8;
 
 BEGIN
 	/* Check if this table is partitioned by PG 10 */
@@ -119,16 +140,27 @@ LANGUAGE plpgsql STRICT;
 
 CREATE FUNCTION migrate_to_pathman(
 	relation	REGCLASS,
+	expression	TEXT DEFAULT NULL,
 	run_tests	BOOL DEFAULT TRUE)
 RETURNS BOOL AS
 $$
 BEGIN
+	IF relation IS NULL THEN
+		RAISE EXCEPTION 'relation should not be NULL';
+	END IF;
+
 	/* Desugar if partitioned by PG 10 */
 	IF is_partitioned_by_pg10(relation) THEN
+		expression = build_vanilla_part_key(relation);
 		PERFORM desugar_vanilla(relation);
+	ELSE
+		RAISE EXCEPTION 'expression should not be NULL';
 	END IF;
+
+	/* Tell pg_pathman about this table */
+	PERFORM add_to_pathman_config(relation, expression, NULL);
 
 	RETURN TRUE;
 END
 $$
-LANGUAGE plpgsql STRICT;
+LANGUAGE plpgsql;

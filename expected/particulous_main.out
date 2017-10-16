@@ -1,0 +1,61 @@
+create extension pg_particulous cascade;
+NOTICE:  installing required extension "pg_pathman"
+create schema parts;
+/*
+ * Migrate from PG 10 partitioning to pg_pathman.
+ */
+create table parts.pt (val int not null) partition by range (val);
+create table parts.pt_0 partition of parts.pt for values from (minvalue) to (1);
+create table parts.pt_1 partition of parts.pt for values from (1)        to (11);
+create table parts.pt_2 partition of parts.pt for values from (11)       to (21);
+create table parts.pt_3 partition of parts.pt for values from (21)       to (31);
+create table parts.pt_4 partition of parts.pt for values from (31)       to (maxvalue);
+select migrate_to_pathman('parts.pt');
+NOTICE:  created constraint on partition parts.pt_0
+NOTICE:  created constraint on partition parts.pt_1
+NOTICE:  created constraint on partition parts.pt_2
+NOTICE:  created constraint on partition parts.pt_3
+NOTICE:  created constraint on partition parts.pt_4
+ migrate_to_pathman 
+--------------------
+ t
+(1 row)
+
+select * from pathman_partition_list order by range_min, range_max;
+  parent  | partition  | parttype | expr | range_min | range_max 
+----------+------------+----------+------+-----------+-----------
+ parts.pt | parts.pt_1 |        2 | val  | 1         | 11
+ parts.pt | parts.pt_2 |        2 | val  | 11        | 21
+ parts.pt | parts.pt_3 |        2 | val  | 21        | 31
+ parts.pt | parts.pt_4 |        2 | val  | 31        | 
+ parts.pt | parts.pt_0 |        2 | val  |           | 1
+(5 rows)
+
+explain (costs off) select * from parts.pt;
+       QUERY PLAN       
+------------------------
+ Append
+   ->  Seq Scan on pt_0
+   ->  Seq Scan on pt_1
+   ->  Seq Scan on pt_2
+   ->  Seq Scan on pt_3
+   ->  Seq Scan on pt_4
+(6 rows)
+
+explain (costs off) select * from only parts.pt;
+   QUERY PLAN   
+----------------
+ Seq Scan on pt
+(1 row)
+
+explain (costs off) select * from parts.pt where val = 1;
+        QUERY PLAN         
+---------------------------
+ Append
+   ->  Seq Scan on pt_1
+         Filter: (val = 1)
+(3 rows)
+
+drop schema parts cascade;
+NOTICE:  drop cascades to table parts.pt
+drop extension pg_particulous;
