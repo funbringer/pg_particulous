@@ -17,12 +17,42 @@ create table parts.pt_4 partition of parts.pt for values from (31)       to (max
 
 select migrate_to_pathman('parts.pt');
 
+
+/* test part bounds etc */
 select * from pathman_partition_list order by range_min, range_max;
 
 
+/* test SELECT */
+select count(*) from parts.pt;
 explain (costs off) select * from parts.pt;
 explain (costs off) select * from only parts.pt;
 explain (costs off) select * from parts.pt where val = 1;
+
+
+/* test INSERT */
+explain (costs off) insert into parts.pt values (1);
+insert into parts.pt values (0), (10), (100) returning *, tableoid::regclass;
+
+
+/* test UPDATE */
+begin;
+explain (costs off) delete from parts.pt where val = 0;
+delete from parts.pt where val = 0 returning *, tableoid::regclass;
+rollback;
+
+
+/* test DELETE */
+begin;
+explain (costs off) update parts.pt set val = 9 where val = 10;
+update parts.pt set val = 9 where val = 10 returning *, tableoid::regclass;
+rollback;
+
+
+/* test TRUNCATE */
+begin;
+truncate parts.pt;
+select count(*) from parts.pt;
+rollback;
 
 
 

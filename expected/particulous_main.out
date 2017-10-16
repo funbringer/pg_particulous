@@ -21,6 +21,7 @@ NOTICE:  created constraint on partition parts.pt_4
  t
 (1 row)
 
+/* test part bounds etc */
 select * from pathman_partition_list order by range_min, range_max;
   parent  | partition  | parttype | expr | range_min | range_max 
 ----------+------------+----------+------+-----------+-----------
@@ -30,6 +31,13 @@ select * from pathman_partition_list order by range_min, range_max;
  parts.pt | parts.pt_4 |        2 | val  | 31        | 
  parts.pt | parts.pt_0 |        2 | val  |           | 1
 (5 rows)
+
+/* test SELECT */
+select count(*) from parts.pt;
+ count 
+-------
+     0
+(1 row)
 
 explain (costs off) select * from parts.pt;
        QUERY PLAN       
@@ -56,6 +64,67 @@ explain (costs off) select * from parts.pt where val = 1;
          Filter: (val = 1)
 (3 rows)
 
+/* test INSERT */
+explain (costs off) insert into parts.pt values (1);
+             QUERY PLAN              
+-------------------------------------
+ Insert on pt
+   ->  Custom Scan (PartitionFilter)
+         ->  Result
+(3 rows)
+
+insert into parts.pt values (0), (10), (100) returning *, tableoid::regclass;
+ val |  tableoid  
+-----+------------
+   0 | parts.pt_0
+  10 | parts.pt_1
+ 100 | parts.pt_4
+(3 rows)
+
+/* test UPDATE */
+begin;
+explain (costs off) delete from parts.pt where val = 0;
+        QUERY PLAN         
+---------------------------
+ Delete on pt_0
+   ->  Seq Scan on pt_0
+         Filter: (val = 0)
+(3 rows)
+
+delete from parts.pt where val = 0 returning *, tableoid::regclass;
+ val |  tableoid  
+-----+------------
+   0 | parts.pt_0
+(1 row)
+
+rollback;
+/* test DELETE */
+begin;
+explain (costs off) update parts.pt set val = 9 where val = 10;
+         QUERY PLAN         
+----------------------------
+ Update on pt_1
+   ->  Seq Scan on pt_1
+         Filter: (val = 10)
+(3 rows)
+
+update parts.pt set val = 9 where val = 10 returning *, tableoid::regclass;
+ val |  tableoid  
+-----+------------
+   9 | parts.pt_1
+(1 row)
+
+rollback;
+/* test TRUNCATE */
+begin;
+truncate parts.pt;
+select count(*) from parts.pt;
+ count 
+-------
+     0
+(1 row)
+
+rollback;
 drop schema parts cascade;
 NOTICE:  drop cascades to table parts.pt
 drop extension pg_particulous;
