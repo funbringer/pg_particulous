@@ -1,5 +1,5 @@
 # pg_particulous extension
-comment = 'pg_particulous - instant migration from pg_pathman to vanilla PostgreSQL and vice versa'
+comment = 'pg_particulous - instant migration from vanilla PostgreSQL to pg_pathman and vice versa'
 default_version = '1.0'
 module_pathname = '$libdir/pg_particulous'
 requires = 'plpgsql, pg_pathman'

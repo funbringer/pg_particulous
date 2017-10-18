@@ -1,2 +1,2 @@
 ## [WIP] pg_particulous
-Instant migration from pg_pathman to vanilla PostgreSQL and vice versa
+Instant migration from vanilla PostgreSQL to pg_pathman and vice versa
