@@ -62,9 +62,16 @@ DECLARE
 	part_relid		regclass;
 	temp_relid		regclass;
 	partition		regclass;
-	first_part		bool := TRUE;
+	has_parts		bool := FALSE;
 
 BEGIN
+	/* Lock important catalog tables */
+	LOCK TABLE pg_catalog.pg_class IN EXCLUSIVE MODE;
+	LOCK TABLE pg_catalog.pg_inherits IN EXCLUSIVE MODE;
+
+	/* Lock partitioned table */
+	EXECUTE format('LOCK TABLE %s IN ACCESS EXCLUSIVE MODE', relation);
+
 	/* Create temporary table for storage */
 	EXECUTE format('CREATE TABLE %s (LIKE %s)', temp_rel_name, relation);
 
@@ -77,16 +84,17 @@ BEGIN
 					 FROM pg_catalog.pg_inherits
 					 WHERE inhparent = part_relid LOOP
 
-		/* Execute this check one time */
-		IF first_part THEN
+		IF NOT has_parts THEN
 			/* Make sure that this table is partitioned by PG 10 */
 			IF NOT is_partitioned_by_pg10(relation) THEN
 				RAISE EXCEPTION 'table % is not managed by PostgreSQL 10', relation;
 			END IF;
 
-			first_part = FALSE;
+			/* Do not perform this check next time */
+			has_parts = TRUE;
 		END IF;
 
+		/* Add a constraint for this table */
 		EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s)',
 					   partition,
 					   build_check_constraint_name(partition),
@@ -98,6 +106,11 @@ BEGIN
 			RAISE EXCEPTION 'cannot desugar partition %', partition;
 		END IF;
 	END LOOP;
+
+	IF NOT has_parts THEN
+		RAISE NOTICE 'table % has no partitions', relation;
+		RETURN TRUE;
+	END IF;
 
 	/* Read tuples of parent & temp tables */
 	SELECT * FROM pg_catalog.pg_class WHERE oid = part_relid INTO part_rel;
@@ -136,6 +149,8 @@ BEGIN
 	/* Finally, drop temporary table */
 	EXECUTE format('DROP TABLE %s', temp_rel_name);
 
+	RAISE NOTICE 'created storage for table %', relation;
+
 	RETURN TRUE;
 END
 $$
@@ -157,7 +172,10 @@ BEGIN
 	IF is_partitioned_by_pg10(relation) THEN
 		expression = build_vanilla_part_key(relation);
 		PERFORM desugar_vanilla(relation);
-	ELSE
+	END IF;
+
+	/* Check if expression is valid */
+	IF expression IS NULL THEN
 		RAISE EXCEPTION 'expression should not be NULL';
 	END IF;
 

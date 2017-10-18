@@ -12,10 +12,16 @@ create table parts.pt_3 partition of parts.pt for values from (21)       to (31)
 create table parts.pt_4 partition of parts.pt for values from (31)       to (maxvalue);
 select migrate_to_pathman('parts.pt');
 NOTICE:  created constraint on partition parts.pt_0
+NOTICE:  table parts.pt_0 has no partitions
 NOTICE:  created constraint on partition parts.pt_1
+NOTICE:  table parts.pt_1 has no partitions
 NOTICE:  created constraint on partition parts.pt_2
+NOTICE:  table parts.pt_2 has no partitions
 NOTICE:  created constraint on partition parts.pt_3
+NOTICE:  table parts.pt_3 has no partitions
 NOTICE:  created constraint on partition parts.pt_4
+NOTICE:  table parts.pt_4 has no partitions
+NOTICE:  created storage for table parts.pt
  migrate_to_pathman 
 --------------------
  t
@@ -130,5 +136,11 @@ vacuum analyze;
 vacuum freeze;
 vacuum full;
 drop schema parts cascade;
-NOTICE:  drop cascades to table parts.pt
+NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to table parts.pt_4_seq
+drop cascades to table parts.pt_3_seq
+drop cascades to table parts.pt_2_seq
+drop cascades to table parts.pt_1_seq
+drop cascades to table parts.pt_0_seq
+drop cascades to table parts.pt
 drop extension pg_particulous;
