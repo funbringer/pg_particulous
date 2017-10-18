@@ -1,3 +1,22 @@
+/* Special checks */
+DO LANGUAGE plpgsql
+$$
+DECLARE
+	pathman_schema text;
+
+BEGIN
+	SELECT extnamespace::regnamespace
+	FROM pg_catalog.pg_extension
+	WHERE extname = 'pg_pathman'
+	INTO pathman_schema;
+
+	IF '@extschema@' != pathman_schema THEN
+		RAISE EXCEPTION 'pg_particulous should be installed into pg_pathman''s schema';
+	END IF;
+END
+$$;
+
+
 CREATE FUNCTION build_vanilla_part_condition(
 	relation	REGCLASS)
 RETURNS TEXT
